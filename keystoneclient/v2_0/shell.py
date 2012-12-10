@@ -436,13 +436,16 @@ def do_endpoint_list(kc, args):
            help='Admin URL endpoint')
 @utils.arg('--internalurl', metavar='<internal-url>',
            help='Internal URL endpoint')
+@utils.arg('--certdata', metavar='<cert-data>',
+	   help='Public Key Certificate Data')
 def do_endpoint_create(kc, args):
     """Create a new endpoint associated with a service"""
     endpoint = kc.endpoints.create(args.region,
                                    args.service_id,
                                    args.publicurl,
                                    args.adminurl,
-                                   args.internalurl)
+                                   args.internalurl,
+				   args.certdata)
     utils.print_dict(endpoint._info)
 
 

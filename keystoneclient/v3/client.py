@@ -23,6 +23,7 @@ from keystoneclient.v3.contrib import endpoint_filter
 from keystoneclient.v3.contrib import federation
 from keystoneclient.v3.contrib import oauth1
 from keystoneclient.v3.contrib import trusts
+from keystoneclient.v3.contrib import virtual_organisations
 from keystoneclient.v3 import credentials
 from keystoneclient.v3 import domains
 from keystoneclient.v3 import endpoints
@@ -177,6 +178,7 @@ EndpointFilterManager`
         self.tokens = tokens.TokenManager(self)
         self.trusts = trusts.TrustManager(self)
         self.users = users.UserManager(self)
+        self.virtual_organisations = virtual_organisations.VoManager(self)
 
         # DEPRECATED: if session is passed then we go to the new behaviour of
         # authenticating on the first required call.

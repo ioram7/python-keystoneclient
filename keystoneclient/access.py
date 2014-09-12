@@ -600,10 +600,15 @@ class AccessInfoV3(AccessInfo):
 
     @property
     def user_domain_id(self):
+        if not self["user"].get("domain"):
+            return 'default'
         return self['user']['domain']['id']
 
     @property
     def user_domain_name(self):
+        return 'Default'
+        if not self["user"].get("domain", None):
+            return 'Default'
         return self['user']['domain']['name']
 
     @property

@@ -327,6 +327,7 @@ class Session(object):
         if raise_exc and resp.status_code >= 400:
             _logger.debug('Request returned failure status: %s',
                           resp.status_code)
+            print url
             raise exceptions.from_response(resp, method, url)
 
         return resp

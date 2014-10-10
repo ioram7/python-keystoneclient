@@ -176,10 +176,6 @@ class OpenStackIdentityShell(object):
         parser.add_argument('--os_cache',
                             help=argparse.SUPPRESS)
 
-        parser.add_argument('--os_cacert', help=argparse.SUPPRESS)
-        parser.add_argument('--os_key', help=argparse.SUPPRESS)
-        parser.add_argument('--os_cert', help=argparse.SUPPRESS)
-
         parser.add_argument('--force-new-token',
                             default=False,
                             action="store_true",
@@ -203,6 +199,11 @@ class OpenStackIdentityShell(object):
                                  access.STALE_TOKEN_DURATION)
 
         session.Session.register_cli_options(parser)
+
+        parser.add_argument('--os_cacert', help=argparse.SUPPRESS)
+        parser.add_argument('--os_key', help=argparse.SUPPRESS)
+        parser.add_argument('--os_cert', help=argparse.SUPPRESS)
+
         return parser
 
     def get_subcommand_parser(self, version):
@@ -437,6 +438,20 @@ class OpenStackIdentityShell(object):
 
 # I'm picky about my shell help.
 class OpenStackHelpFormatter(argparse.HelpFormatter):
+    INDENT_BEFORE_ARGUMENTS = 6
+    MAX_WIDTH_ARGUMENTS = 32
+
+    def add_arguments(self, actions):
+        for action in filter(lambda x: not x.option_strings, actions):
+            if not action.choices:
+                continue
+            for choice in action.choices:
+                length = len(choice) + self.INDENT_BEFORE_ARGUMENTS
+                if(length > self._max_help_position and
+                   length <= self.MAX_WIDTH_ARGUMENTS):
+                    self._max_help_position = length
+        super(OpenStackHelpFormatter, self).add_arguments(actions)
+
     def start_section(self, heading):
         # Title-case the headings
         heading = '%s%s' % (heading[0].upper(), heading[1:])

@@ -10,26 +10,4 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-
-from keystoneclient.auth.base import *  # noqa
-from keystoneclient.auth.cli import *  # noqa
-from keystoneclient.auth.conf import *  # noqa
-
-
-__all__ = [
-    # auth.base
-    'AUTH_INTERFACE',
-    'BaseAuthPlugin',
-    'get_plugin_class',
-    'PLUGIN_NAMESPACE',
-
-    # auth.cli
-    'load_from_argparse_arguments',
-    'register_argparse_arguments',
-
-    # auth.conf
-    'get_common_conf_options',
-    'get_plugin_options',
-    'load_from_conf_options',
-    'register_conf_options',
-]
+from keystoneclient.v3.contrib.virtual_organisations.core import *  # noqa

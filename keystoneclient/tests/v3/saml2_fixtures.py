@@ -10,7 +10,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-SP_SOAP_RESPONSE = b"""<S:Envelope
+import six
+
+SP_SOAP_RESPONSE = six.b("""<S:Envelope
 xmlns:S="http://schemas.xmlsoap.org/soap/envelope/">
 <S:Header>
 <paos:Request xmlns:paos="urn:liberty:paos:2003-08"
@@ -41,10 +43,11 @@ AssertionConsumerServiceURL="https://openstack4.local/Shibboleth.sso/SAML2/ECP"
  </saml:Issuer><samlp:NameIDPolicy AllowCreate="1"/><samlp:Scoping>
  <samlp:IDPList>
  <samlp:IDPEntry ProviderID="https://idp.testshib.org/idp/shibboleth"/>
- </samlp:IDPList></samlp:Scoping></samlp:AuthnRequest></S:Body></S:Envelope>"""
+ </samlp:IDPList></samlp:Scoping></samlp:AuthnRequest></S:Body></S:Envelope>
+""")
 
 
-SAML2_ASSERTION = b"""<?xml version="1.0" encoding="UTF-8"?>
+SAML2_ASSERTION = six.b("""<?xml version="1.0" encoding="UTF-8"?>
 <soap11:Envelope xmlns:soap11="http://schemas.xmlsoap.org/soap/envelope/">
 <soap11:Header>
 <ecp:Response xmlns:ecp="urn:oasis:names:tc:SAML:2.0:profiles:SSO:ecp"
@@ -92,7 +95,7 @@ xmlns:ds="http://www.w3.org/2000/09/xmldsig#"/>
 <xenc:CipherValue>VALUE=</xenc:CipherValue></xenc:CipherData>
 </xenc:EncryptedData></saml2:EncryptedAssertion></saml2p:Response>
 </soap11:Body></soap11:Envelope>
-"""
+""")
 
 UNSCOPED_TOKEN_HEADER = 'UNSCOPED_TOKEN'
 
@@ -117,5 +120,52 @@ UNSCOPED_TOKEN = {
             "id": "testhib%20user",
             "name": "testhib user"
         }
+    }
+}
+
+PROJECTS = {
+    "projects": [
+        {
+            "domain_id": "37ef61",
+            "enabled": 'true',
+            "id": "12d706",
+            "links": {
+                "self": "http://identity:35357/v3/projects/12d706"
+            },
+            "name": "a project name"
+        },
+        {
+            "domain_id": "37ef61",
+            "enabled": 'true',
+            "id": "9ca0eb",
+            "links": {
+                "self": "http://identity:35357/v3/projects/9ca0eb"
+            },
+            "name": "another project"
+        }
+    ],
+    "links": {
+        "self": "http://identity:35357/v3/OS-FEDERATION/projects",
+        "previous": 'null',
+        "next": 'null'
+    }
+}
+
+DOMAINS = {
+    "domains": [
+        {
+            "description": "desc of domain",
+            "enabled": 'true',
+            "id": "37ef61",
+            "links": {
+                "self": "http://identity:35357/v3/domains/37ef61"
+            },
+            "name": "my domain"
+        }
+    ],
+    "links": {
+        "self": "http://identity:35357/v3/OS-FEDERATION/domains",
+        "previous": 'null',
+        "next": 'null'
     }
 }

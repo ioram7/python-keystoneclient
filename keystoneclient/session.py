@@ -11,8 +11,10 @@
 # under the License.
 
 import argparse
+import functools
 import logging
 import os
+import time
 
 from oslo.config import cfg
 import requests
@@ -47,22 +49,6 @@ def _positive_non_zero_float(argument_value):
 
 def request(url, method='GET', **kwargs):
     return Session().request(url, method=method, **kwargs)
-
-
-class _FakeRequestSession(object):
-    """This object is a temporary hack that should be removed later.
-
-    Keystoneclient has a cyclical dependency with its managers which is
-    preventing it from being cleaned up correctly. This is always bad but when
-    we switched to doing connection pooling this object wasn't getting cleaned
-    either and so we had left over TCP connections hanging around.
-
-    Until we can fix the client cleanup we rollback the use of a requests
-    session and do individual connections like we used to.
-    """
-
-    def request(self, *args, **kwargs):
-        return requests.request(*args, **kwargs)
 
 
 class Session(object):
@@ -113,7 +99,7 @@ class Session(object):
                                   for forever/never. (optional, default to 30)
         """
         if not session:
-            session = _FakeRequestSession()
+            session = requests.Session()
 
         self.auth = auth
         self.session = session
@@ -130,11 +116,81 @@ class Session(object):
         if user_agent is not None:
             self.user_agent = user_agent
 
+    @classmethod
+    def process_header(cls, header):
+        """Redacts the secure headers to be logged."""
+        secure_headers = ('authorization', 'x-auth-token',
+                          'x-subject-token',)
+        if header[0].lower() in secure_headers:
+            return (header[0], 'TOKEN_REDACTED')
+        return header
+
+    @utils.positional()
+    def _http_log_request(self, url, method=None, data=None,
+                          json=None, headers=None):
+        if not _logger.isEnabledFor(logging.DEBUG):
+            # NOTE(morganfainberg): This whole debug section is expensive,
+            # there is no need to do the work if we're not going to emit a
+            # debug log.
+            return
+
+        string_parts = ['REQ: curl -i']
+
+        # NOTE(jamielennox): None means let requests do its default validation
+        # so we need to actually check that this is False.
+        if self.verify is False:
+            string_parts.append('--insecure')
+
+        if method:
+            string_parts.extend(['-X', method])
+
+        string_parts.append(url)
+
+        if headers:
+            for header in six.iteritems(headers):
+                string_parts.append('-H "%s: %s"'
+                                    % Session.process_header(header))
+        if json:
+            data = jsonutils.dumps(json)
+        if data:
+            string_parts.append("-d '%s'" % data)
+
+        _logger.debug(' '.join(string_parts))
+
+    @utils.positional()
+    def _http_log_response(self, response=None, json=None,
+                           status_code=None, headers=None, text=None):
+        if not _logger.isEnabledFor(logging.DEBUG):
+            return
+
+        if response:
+            if not status_code:
+                status_code = response.status_code
+            if not headers:
+                headers = response.headers
+            if not text:
+                text = response.text
+        if json:
+            text = jsonutils.dumps(json)
+
+        string_parts = ['RESP:']
+
+        if status_code:
+            string_parts.append('[%s]' % status_code)
+        if headers:
+            for header in six.iteritems(headers):
+                string_parts.append('%s: %s' % Session.process_header(header))
+        if text:
+            string_parts.append('\nRESP BODY: %s\n' % text)
+
+        _logger.debug(' '.join(string_parts))
+
     @utils.positional(enforcement=utils.positional.WARN)
     def request(self, url, method, json=None, original_ip=None,
                 user_agent=None, redirect=None, authenticated=None,
                 endpoint_filter=None, auth=None, requests_auth=None,
-                raise_exc=True, allow_reauth=True, **kwargs):
+                raise_exc=True, allow_reauth=True, log=True,
+                endpoint_override=None, connect_retries=0, **kwargs):
         """Send an HTTP request with the specified characteristics.
 
         Wrapper around `requests.Session.request` to handle tasks such as
@@ -160,6 +216,9 @@ class Session(object):
                                   can be followed by a request. Either an
                                   integer for a specific count or True/False
                                   for forever/never. (optional)
+        :param int connect_retries: the maximum number of retries that should
+                                    be attempted for connection errors.
+                                    (optional, defaults to 0 - never retry).
         :param bool authenticated: True if a token should be attached to this
                                    request, False if not or None for attach if
                                    an auth_plugin is available.
@@ -169,6 +228,11 @@ class Session(object):
                                      endpoint to use for this request. If not
                                      provided then URL is expected to be a
                                      fully qualified URL. (optional)
+        :param str endpoint_override: The URL to use instead of looking up the
+                                      endpoint in the auth plugin. This will be
+                                      ignored if a fully qualified URL is
+                                      provided but take priority over an
+                                      endpoint_filter. (optional)
         :param auth: The auth plugin to use when authenticating this request.
                      This will override the plugin that is attached to the
                      session (if any). (optional)
@@ -183,6 +247,8 @@ class Session(object):
         :param bool allow_reauth: Allow fetching a new token and retrying the
                                   request on receiving a 401 Unauthorized
                                   response. (optional, default True)
+        :param bool log: If True then log the request and response data to the
+                         debug log. (optional, default True)
         :param kwargs: any other parameter that can be passed to
                        requests.Session.request (such as `headers`). Except:
                        'data' will be overwritten by the data in 'json' param.
@@ -215,9 +281,13 @@ class Session(object):
         # should ignore the filter. This will make it easier for clients who
         # want to overrule the default endpoint_filter data added to all client
         # requests. We check fully qualified here by the presence of a host.
-        url_data = urllib.parse.urlparse(url)
-        if endpoint_filter and not url_data.netloc:
-            base_url = self.get_endpoint(auth, **endpoint_filter)
+        if not urllib.parse.urlparse(url).netloc:
+            base_url = None
+
+            if endpoint_override:
+                base_url = endpoint_override
+            elif endpoint_filter:
+                base_url = self.get_endpoint(auth, **endpoint_filter)
 
             if not base_url:
                 raise exceptions.EndpointNotFound()
@@ -250,28 +320,10 @@ class Session(object):
         if requests_auth:
             kwargs['auth'] = requests_auth
 
-        string_parts = ['curl -i']
-
-        # NOTE(jamielennox): None means let requests do its default validation
-        # so we need to actually check that this is False.
-        if self.verify is False:
-            string_parts.append('--insecure')
-
-        if method:
-            string_parts.extend(['-X', method])
-
-        string_parts.append(url)
-
-        if headers:
-            for header in six.iteritems(headers):
-                string_parts.append('-H "%s: %s"' % header)
-
-        try:
-            string_parts.append("-d '%s'" % kwargs['data'])
-        except KeyError:
-            pass
-
-        _logger.debug('REQ: %s', ' '.join(string_parts))
+        if log:
+            self._http_log_request(url, method=method,
+                                   data=kwargs.get('data'),
+                                   headers=headers)
 
         # Force disable requests redirect handling. We will manage this below.
         kwargs['allow_redirects'] = False
@@ -279,7 +331,9 @@ class Session(object):
         if redirect is None:
             redirect = self.redirect
 
-        resp = self._send_request(url, method, redirect, **kwargs)
+        send = functools.partial(self._send_request,
+                                 url, method, redirect, log, connect_retries)
+        resp = send(**kwargs)
 
         # handle getting a 401 Unauthorized response by invalidating the plugin
         # and then retrying the request. This is only tried once.
@@ -288,7 +342,7 @@ class Session(object):
                 token = self.get_token(auth)
                 if token:
                     headers['X-Auth-Token'] = token
-                    resp = self._send_request(url, method, redirect, **kwargs)
+                    resp = send(**kwargs)
 
         if raise_exc and resp.status_code >= 400:
             _logger.debug('Request returned failure status: %s',
@@ -297,26 +351,47 @@ class Session(object):
 
         return resp
 
-    def _send_request(self, url, method, redirect, **kwargs):
+    def _send_request(self, url, method, redirect, log, connect_retries,
+                      connect_retry_delay=0.5, **kwargs):
         # NOTE(jamielennox): We handle redirection manually because the
         # requests lib follows some browser patterns where it will redirect
         # POSTs as GETs for certain statuses which is not want we want for an
         # API. See: https://en.wikipedia.org/wiki/Post/Redirect/Get
 
-        try:
-            resp = self.session.request(method, url, **kwargs)
-        except requests.exceptions.SSLError:
-            msg = 'SSL exception connecting to %s' % url
-            raise exceptions.SSLError(msg)
-        except requests.exceptions.Timeout:
-            msg = 'Request to %s timed out' % url
-            raise exceptions.RequestTimeout(msg)
-        except requests.exceptions.ConnectionError:
-            msg = 'Unable to establish connection to %s' % url
-            raise exceptions.ConnectionRefused(msg)
+        # NOTE(jamielennox): The interaction between retries and redirects are
+        # handled naively. We will attempt only a maximum number of retries and
+        # redirects rather than per request limits. Otherwise the extreme case
+        # could be redirects * retries requests. This will be sufficient in
+        # most cases and can be fixed properly if there's ever a need.
 
-        _logger.debug('RESP: [%s] %s\nRESP BODY: %s\n',
-                      resp.status_code, resp.headers, resp.text)
+        try:
+            try:
+                resp = self.session.request(method, url, **kwargs)
+            except requests.exceptions.SSLError:
+                msg = 'SSL exception connecting to %s' % url
+                raise exceptions.SSLError(msg)
+            except requests.exceptions.Timeout:
+                msg = 'Request to %s timed out' % url
+                raise exceptions.RequestTimeout(msg)
+            except requests.exceptions.ConnectionError:
+                msg = 'Unable to establish connection to %s' % url
+                raise exceptions.ConnectionRefused(msg)
+        except (exceptions.RequestTimeout, exceptions.ConnectionRefused) as e:
+            if connect_retries <= 0:
+                raise
+
+            _logger.info('Failure: %s. Retrying in %.1fs.',
+                         e, connect_retry_delay)
+            time.sleep(connect_retry_delay)
+
+            return self._send_request(
+                url, method, redirect, log,
+                connect_retries=connect_retries - 1,
+                connect_retry_delay=connect_retry_delay * 2,
+                **kwargs)
+
+        if log:
+            self._http_log_response(response=resp)
 
         if resp.status_code in self.REDIRECT_STATUSES:
             # be careful here in python True == 1 and False == 0
@@ -335,8 +410,12 @@ class Session(object):
                 _logger.warn("Failed to redirect request to %s as new "
                              "location was not provided.", resp.url)
             else:
-                new_resp = self._send_request(location, method, redirect,
-                                              **kwargs)
+                # NOTE(jamielennox): We don't pass through connect_retry_delay.
+                # This request actually worked so we can reset the delay count.
+                new_resp = self._send_request(
+                    location, method, redirect, log,
+                    connect_retries=connect_retries,
+                    **kwargs)
 
                 if not isinstance(new_resp.history, list):
                     new_resp.history = list(new_resp.history)

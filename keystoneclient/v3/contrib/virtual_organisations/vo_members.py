@@ -148,12 +148,14 @@ class VoMembersManager(base.CrudManager):
         """Resign from a VO Role.
 
         Utilize Keystone URI:
-        DELETE /OS-FEDERATION/vo_members
+        DELETE /OS-FEDERATION/vo_roles/{vo_role_id}/users
 
-        :param identity_provider: an object with identity_provider_id
+        :param vo_role: an object with vo_role_id
                                   stored inside.
 
         """
+	print "RESIGN IN Keystone CLIENT!!"
+        url = "/OS-FEDERATION/vo_roles/" + base.getid(vo_role)
         return super(VoMembersManager, self).delete(
-            member_id=base.getid(member),
-            base_url=self.build_base_url(vo_role))
+            base_url=url)            
+#base_url=self.build_base_url(vo_role))

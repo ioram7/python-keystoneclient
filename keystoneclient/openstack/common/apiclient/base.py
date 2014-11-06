@@ -471,13 +471,21 @@ class Resource(object):
         return None
 
     def _add_details(self, info):
-        for (k, v) in six.iteritems(info):
-            try:
-                setattr(self, k, v)
-                self._info[k] = v
-            except AttributeError:
+        #Ioram 01/11/2014
+        #print "Ioram PKC API Client Base _add_details"
+        #print info
+	try:
+            for (k, v) in six.iteritems(info):
+                try:
+                    setattr(self, k, v)
+                    self._info[k] = v
+                except AttributeError:
                 # In this case we already defined the attribute on the class
-                pass
+                    pass
+        except Exception:
+	    setattr(self, 'id', info)
+	    setattr(self, 'idp', 'KentProxy')
+            pass
 
     def __getattr__(self, k):
         if k not in self.__dict__:

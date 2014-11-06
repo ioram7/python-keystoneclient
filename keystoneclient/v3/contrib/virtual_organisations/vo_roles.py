@@ -51,6 +51,8 @@ class VoRolesManager(base.CrudManager):
         GET /OS-FEDERATION/vo_roles
 
         """
+	#Ioram 31/10/2014
+	#print "IORAM VoRoles.List"
         return super(VoRolesManager, self).list(**kwargs)
         
     def update(self, vo_role,

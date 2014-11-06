@@ -9,8 +9,8 @@ class VoMembersManager(base.CrudManager):
     """Manager class for manipulating VO Roles."""
 
     resource_class = VoMember
-    collection_key = 'users'
-    key            = 'user'
+    collection_key = 'members'
+    key            = 'member'
     base_url       = 'OS-FEDERATION'
 
 
@@ -67,7 +67,6 @@ class VoMembersManager(base.CrudManager):
                                   stored inside.
 
         """
-
         return super(VoMembersManager, self).get(
             vo_role_id= base.getid(vo_role),
             member_id=base.getid(member_id),
@@ -99,6 +98,11 @@ class VoMembersManager(base.CrudManager):
                                   stored inside.
 
         """
+	#Ioram 01/11/2014
+	#print "Ioram PKC VO Members List"
+        #vo_role_id=base.getid(vo_role)
+        #print vo_role
+        #print vo_role_id
         return super(VoMembersManager, self).list(
             vo_role_id=base.getid(vo_role),
             **kwargs)
@@ -148,12 +152,14 @@ class VoMembersManager(base.CrudManager):
         """Resign from a VO Role.
 
         Utilize Keystone URI:
-        DELETE /OS-FEDERATION/vo_members
+        DELETE /OS-FEDERATION/vo_roles/{vo_role_id}/users
 
-        :param identity_provider: an object with identity_provider_id
+        :param vo_role: an object with vo_role_id
                                   stored inside.
 
         """
+	print "RESIGN IN Keystone CLIENT!!"
+        url = "/OS-FEDERATION/vo_roles/" + base.getid(vo_role)
         return super(VoMembersManager, self).delete(
-            member_id=base.getid(member),
-            base_url=self.build_base_url(vo_role))
+            base_url=url)            
+#base_url=self.build_base_url(vo_role))

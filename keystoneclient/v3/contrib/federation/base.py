@@ -30,6 +30,7 @@ class EntityManager(base.Manager):
 
     def list(self):
         url = '/OS-FEDERATION/%s' % self.object_type
+	#print "Ioram PKC"
         try:
             tenant_list = self._list(url, self.object_type)
         except exceptions.EndpointNotFound:

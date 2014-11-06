@@ -10,7 +10,7 @@ class VoBlacklistManager(base.CrudManager):
 
     resource_class = VoBlacklist
     collection_key = 'vo_blacklist'
-    key            = 'blacklist'
+    key            = 'vo_blacklist'
     base_url       = 'OS-FEDERATION'
     url_key        = 'blacklist'
 
@@ -38,7 +38,8 @@ class VoBlacklistManager(base.CrudManager):
         entity_id = dict_args_in_out.pop('%s_id' % self.key, None)
         if entity_id is not None:
             url += '/%s' % entity_id
-
+        print "Entity ID: %s" % entity_id
+        print url
         return url
 
             

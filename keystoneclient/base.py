@@ -52,8 +52,11 @@ def filter_none(**kwargs):
 
 
 def filter_kwargs(f):
+
+    #Ioram 03/11/2014
     @functools.wraps(f)
     def func(*args, **kwargs):
+        #print "Ioram PKC filter_kwargs"
         new_kwargs = {}
         for key, ref in six.iteritems(kwargs):
             if ref is None:
@@ -67,6 +70,8 @@ def filter_kwargs(f):
                 key = '%s_id' % key
 
             new_kwargs[key] = id_value
+
+            #print id_value
 
         return f(*args, **new_kwargs)
     return func
@@ -106,6 +111,15 @@ class Manager(object):
             request (GET will be sent by default)
         :param kwargs: Additional arguments will be passed to the request.
         """
+
+        # Ioram 03/11/2014
+	#print "Ioram PKC Base Manager_list"
+	#print "===="
+        #print url
+        #print response_key
+        #print obj_class
+        #print body
+
         if body:
             resp, body = self.client.post(url, body=body, **kwargs)
         else:
@@ -121,6 +135,9 @@ class Manager(object):
             data = data['values']
         except (KeyError, TypeError):
             pass
+
+        print data
+	print "===="
 
         return [obj_class(self, res, loaded=True) for res in data if res]
 
@@ -338,12 +355,20 @@ class CrudManager(Manager):
 
     @filter_kwargs
     def list(self, **kwargs):
+        #Ioram 01/11/2014
+        #print "Ioram PYC Base CRUDManager"
+
         url = self.build_url(dict_args_in_out=kwargs)
+
+	#print "url: "+url
 
         if kwargs:
             query = '?%s' % urllib.parse.urlencode(kwargs)
         else:
             query = ''
+
+	#print "query: "+query
+
         return self._list(
             '%(url)s%(query)s' % {
                 'url': url,

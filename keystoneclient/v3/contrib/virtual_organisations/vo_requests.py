@@ -77,7 +77,7 @@ class VoRequestsManager(base.CrudManager):
         DELETE DELETE /OS-FEDERATION/vo_roles/{vo_role_id}/requests/{vo_request_id}
 
         """
-        return super(IdentityProviderManager, self).delete(
+        return super(VoRequestsManager, self).delete(
             vo_role_id=base.getid(vo_role),
             vo_request_id=base.getid(vo_request)
         )

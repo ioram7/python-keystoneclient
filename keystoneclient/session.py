@@ -267,8 +267,25 @@ class Session(object):
         # want to overrule the default endpoint_filter data added to all client
         # requests. We check fully qualified here by the presence of a host.
         url_data = urllib.parse.urlparse(url)
+	#print "Ioram> url_data"
+	#print url_data
+	#print "Ioram> endpoint_filter"
+	#print endpoint_filter
+	#print "Ioram> self.auth.auth_url"
+	#print self.auth.auth_url
+	#print "Ioram> self.auth.management_url"
+	#print self.auth.management_url
+
         if endpoint_filter and not url_data.netloc:
             base_url = self.get_endpoint(auth, **endpoint_filter)
+
+            #print "Ioram> base_url"
+            #print base_url
+
+            #print "Ioram> endpoint"
+            sa = self.auth
+            ep = sa.get_endpoint(self, **endpoint_filter)
+            print ep
 
             if not base_url:
                 raise exceptions.EndpointNotFound()
@@ -339,6 +356,11 @@ class Session(object):
         # API. See: https://en.wikipedia.org/wiki/Post/Redirect/Get
 
         try:
+	    #print "IORAM 2015-01-26 AQUI"
+	    #print method
+	    #print url
+            #print kwargs
+	    #print "********"
             resp = self.session.request(method, url, **kwargs)
         except requests.exceptions.SSLError:
             msg = 'SSL exception connecting to %s' % url
@@ -418,8 +440,14 @@ class Session(object):
                      'timeout', 'session', 'original_ip', 'user_agent'):
             try:
                 params[attr] = kwargs.pop(attr)
+		#print "---"
+		#print attr
             except KeyError:
                 pass
+
+	    #params['verify'] = False
+	    #Ioram 2015-02-04> Only add this when using SSL
+	    #params['cacert'] = '/etc/libapache2-mod-nss/sec.cs.kent.ac.uk.cert'
 
         return cls._make(**params)
 
@@ -594,6 +622,9 @@ class Session(object):
         :returns: A new session object.
         """
         c = conf[group]
+
+	#print "IORAM LFCO"
+	#print c
 
         kwargs['insecure'] = c.insecure
         kwargs['cacert'] = c.cafile

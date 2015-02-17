@@ -114,11 +114,11 @@ class Manager(object):
 
         # Ioram 03/11/2014
 	#print "Ioram PKC Base Manager_list"
-	#print "===="
-        #print url
-        #print response_key
-        #print obj_class
-        #print body
+	print "===="
+        print url
+        print response_key
+        print obj_class
+        print body
 
         if body:
             resp, body = self.client.post(url, body=body, **kwargs)
@@ -127,6 +127,8 @@ class Manager(object):
 
         if obj_class is None:
             obj_class = self.resource_class
+
+        print body
 
         data = body[response_key]
         # NOTE(ja): keystone returns values as list as {'values': [ ... ]}

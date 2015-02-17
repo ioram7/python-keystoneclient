@@ -30,6 +30,15 @@ class VoRolesManager(base.CrudManager):
             vo_role=vo_role_name,
             vo_is_domain=True,
             **kwargs)
+
+    def list_all(self, **kwargs):
+        """List all VO Roles.
+
+        Utilize Keystone URI:
+        GET /OS-FEDERATION/vo_roles/all
+
+        """
+        return super(VoRolesManager, self).list(**kwargs)
             
     def get(self, vo_role):
         """Fetch Identity Provider object
@@ -44,6 +53,7 @@ class VoRolesManager(base.CrudManager):
         return super(VoRolesManager, self).get(
             vo_role_id= base.getid(vo_role))
             
+
     def list(self, **kwargs):
         """List all VO Roles.
 
@@ -54,7 +64,7 @@ class VoRolesManager(base.CrudManager):
 	#Ioram 31/10/2014
 	#print "IORAM VoRoles.List"
         return super(VoRolesManager, self).list(**kwargs)
-        
+
     def update(self, vo_role,
                      automatic_join=None,
                      description=None,

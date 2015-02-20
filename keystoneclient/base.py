@@ -114,11 +114,11 @@ class Manager(object):
 
         # Ioram 03/11/2014
 	#print "Ioram PKC Base Manager_list"
-	print "===="
-        print url
-        print response_key
-        print obj_class
-        print body
+	#print "===="
+        #print url
+        #print response_key
+        #print obj_class
+        #print body
 
         if body:
             resp, body = self.client.post(url, body=body, **kwargs)
@@ -128,7 +128,7 @@ class Manager(object):
         if obj_class is None:
             obj_class = self.resource_class
 
-        print body
+        #print body
 
         data = body[response_key]
         # NOTE(ja): keystone returns values as list as {'values': [ ... ]}
@@ -138,8 +138,8 @@ class Manager(object):
         except (KeyError, TypeError):
             pass
 
-        print data
-	print "===="
+        #print data
+	#print "===="
 
         return [obj_class(self, res, loaded=True) for res in data if res]
 
@@ -152,6 +152,11 @@ class Manager(object):
         :param kwargs: Additional arguments will be passed to the request.
         """
         resp, body = self.client.get(url, **kwargs)
+	#print "RRRRRRRRRRRRRRRRRRRRRRRRRR"
+	#print resp
+	#print "------------"
+	#print body
+	#print "RRRRRRRRRRRRRRRRRRRRRRRRRR"
         return self.resource_class(self, body[response_key], loaded=True)
 
     def _head(self, url, **kwargs):

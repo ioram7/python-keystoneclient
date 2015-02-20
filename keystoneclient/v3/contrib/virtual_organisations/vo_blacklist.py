@@ -38,8 +38,8 @@ class VoBlacklistManager(base.CrudManager):
         entity_id = dict_args_in_out.pop('%s_id' % self.key, None)
         if entity_id is not None:
             url += '/%s' % entity_id
-        print "Entity ID: %s" % entity_id
-        print url
+        #print "Entity ID: %s" % entity_id
+        #print url
         return url
 
             

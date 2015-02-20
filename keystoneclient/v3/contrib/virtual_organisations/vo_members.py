@@ -42,7 +42,7 @@ class VoMembersManager(base.CrudManager):
         """Join a VO Role.
 
         Utilize Keystone URI:
-        POST /OS-FEDERATION/vo_members
+        PUT /OS-FEDERATION/vo_users
 
         """
         url = "/OS-FEDERATION/vo_users"
@@ -87,7 +87,7 @@ class VoMembersManager(base.CrudManager):
             url,
             "vo_request"
             )
-            
+  
     def list(self, vo_role, **kwargs):
         """List members with a VO role.
 
@@ -158,7 +158,7 @@ class VoMembersManager(base.CrudManager):
                                   stored inside.
 
         """
-	print "RESIGN IN Keystone CLIENT!!"
+	#print "RESIGN IN Keystone CLIENT!!"
         url = "/OS-FEDERATION/vo_roles/" + base.getid(vo_role)
         return super(VoMembersManager, self).delete(
             base_url=url)            

@@ -68,6 +68,7 @@ class UserManager(base.CrudManager):
                                      email=email,
                                      description=description,
                                      enabled=enabled,
+			             #idp_id="LOCAL",
                                      **kwargs)
 
         return self._create('/users', {'user': user_data}, 'user',

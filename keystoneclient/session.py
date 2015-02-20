@@ -285,7 +285,7 @@ class Session(object):
             #print "Ioram> endpoint"
             sa = self.auth
             ep = sa.get_endpoint(self, **endpoint_filter)
-            print ep
+            #print ep
 
             if not base_url:
                 raise exceptions.EndpointNotFound()
@@ -344,7 +344,7 @@ class Session(object):
         if raise_exc and resp.status_code >= 400:
             _logger.debug('Request returned failure status: %s',
                           resp.status_code)
-            print url
+            #print url
             raise exceptions.from_response(resp, method, url)
 
         return resp

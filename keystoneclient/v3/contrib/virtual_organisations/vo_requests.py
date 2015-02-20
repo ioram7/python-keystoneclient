@@ -66,10 +66,10 @@ class VoRequestsManager(base.CrudManager):
                                   stored inside.
 
         """
-	print "IORAM 2015-02-03> VO Request List"
-	print vo_role
-	print kwargs
-	print base.getid(vo_role)
+	#print "IORAM 2015-02-03> VO Request List"
+	#print vo_role
+	#print kwargs
+	#print base.getid(vo_role)
         return super(VoRequestsManager, self).list(
             vo_role_id=base.getid(vo_role),
             **kwargs)
